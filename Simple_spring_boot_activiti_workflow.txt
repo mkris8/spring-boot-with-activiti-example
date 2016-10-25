@@ -1,0 +1,161 @@
+Creating a simple activiti BPMN workflow using spring boot
+----------------------------------------------------------
+
+https://spring.io/blog/2015/03/08/getting-started-with-activiti-and-spring-boot
+
+checkout the gt repo https://github.com/jbarrez/spring-boot-with-activiti-example.git
+
+import in to eclipse project
+
+$mvn eclipse:eclipse
+$mvn package
+
+Start the application.
+$mvn spring-boot:run
+
+start a process instance using REST:
+
+curl -u admin:admin -H "Content-Type: application/json" -d '{"processDefinitionKey":"hireProcess", "variables": [ {"name":"applicantName", "value":"Manoj Kris"}, {"name":"email", "value":"manoj.kris@activiti.com"}, {"name":"phoneNumber", "value":"4444"} ]}' http://localhost:8080/runtime/process-instances
+
+This returns us the json representation of the process instance:
+
+{"id":"8","url":"http://localhost:8080/runtime/process-instances/8","businessKey":null,"suspended":false,"ended":false,"processDefinitionId":"hireProcess:1:6","processDefinitionUrl":"http://localhost:8080/repository/process-definitions/hireProcess:1:6","activityId":"sid-42BAE58A-8FFB-4B02-AAED-E0D8EA5A7E39","variables":[],"tenantId":"","completed":false}
+
+Restart the application and start a new process instance:
+
+curl -u admin:admin -H "Content-Type: application/json" -d '{"name":"Manoj Kris", "email": "manoj.kris@activiti.com", "phoneNumber":"4444"}' http://localhost:8080/start-hire-process
+
+check which task the process instance currently is at :
+curl -u admin:admin -H "Content-Type: application/json" http://localhost:8080/runtime/tasks
+
+To get the json output written to a file , perform a redirect like below
+curl -u admin:admin -H "Content-Type: application/json" http://localhost:8080/runtime/tasks > unformatted.json
+
+less unformatted.json
+
+and then use the below to format the json output
+cat unformatted.json | python -m json.tool > formatted.json
+less formatted.json
+
+Result is :
+
+ {
+     "data": [
+         {
+             "assignee": null,
+             "category": null,
+             "createTime": "2016-10-25T10:36:58.727+01:00",
+             "delegationState": null,
+             "description": "Conduct a telephone interview with Manoj Kris. Phone number = 4444",
+             "dueDate": null,
+             "executionId": "8",
+             "executionUrl": "http://localhost:8080/runtime/executions/8",
+             "formKey": null,
+             "id": "14",
+             "name": "Telephone interview",
+             "owner": null,
+             "parentTaskId": null,
+             "parentTaskUrl": null,
+             "priority": 50,
+             "processDefinitionId": "hireProcessWithJpa:1:7",
+             "processDefinitionUrl": "http://localhost:8080/repository/process-definitions/hireProcessWithJpa:1:7",
+             "processInstanceId": "8",
+             "processInstanceUrl": "http://localhost:8080/runtime/process-instances/8",
+             "suspended": false,
+             "taskDefinitionKey": "sid-42BAE58A-8FFB-4B02-AAED-E0D8EA5A7E39",
+             "tenantId": "",
+             "url": "http://localhost:8080/runtime/tasks/14",
+             "variables": []
+         }
+     ],
+     "order": "asc",
+     "size": 1,
+     "sort": "id",
+     "start": 0,
+     "total": 1
+ }
+ 
+ So, our process is now at the Telephone interview.
+ 
+ In a realistic application, there would be a task list and a form that could be filled in to complete this task. 
+ 
+ Complete this task by setting the telephoneInterviewOutcome variable to true.(use the id 14 from the above response)
+ 
+ curl -u admin:admin -H "Content-Type: application/json" -d '{"action" : "complete", "variables": [ {"name":"telephoneInterviewOutcome", "value":true} ]}' http://localhost:8080/runtime/tasks/14
+ 
+ get the tasks again
+ 
+ curl -u admin:admin -H "Content-Type: application/json" http://localhost:8080/runtime/tasks > unformatted.json
+ $ cat unformatted.json | python -m json.tool > formatted.json
+ $ less formatted.json
+ 
+ result is :
+ {
+     "data": [
+         {
+             "assignee": null,
+             "category": null,
+             "createTime": "2016-10-25T11:02:48.893+01:00",
+             "delegationState": null,
+             "description": null,
+             "dueDate": null,
+             "executionId": "23",
+             "executionUrl": "http://localhost:8080/runtime/executions/23",
+             "formKey": null,
+             "id": "26",
+             "name": "Tech interview",
+             "owner": null,
+             "parentTaskId": null,
+             "parentTaskUrl": null,
+             "priority": 50,
+             "processDefinitionId": "hireProcessWithJpa:1:7",
+             "processDefinitionUrl": "http://localhost:8080/repository/process-definitions/hireProcessWithJpa:1:7",
+             "processInstanceId": "8",
+             "processInstanceUrl": "http://localhost:8080/runtime/process-instances/8",
+             "suspended": false,
+             "taskDefinitionKey": "sid-C2137C46-166B-4F9B-92A1-97BF920FCD9E",
+             "tenantId": "",
+             "url": "http://localhost:8080/runtime/tasks/26",
+             "variables": []
+         },
+         {
+             "assignee": null,
+             "category": null,
+             "createTime": "2016-10-25T11:02:48.896+01:00",
+             "delegationState": null,
+             "description": null,
+             "dueDate": null,
+             "executionId": "24",
+             "executionUrl": "http://localhost:8080/runtime/executions/24",
+             "formKey": null,
+             "id": "29",
+             "name": "Financial negotiation",
+             "owner": null,
+             "parentTaskId": null,
+             "parentTaskUrl": null,
+             "priority": 50,
+             "processDefinitionId": "hireProcessWithJpa:1:7",
+             "processDefinitionUrl": "http://localhost:8080/repository/process-definitions/hireProcessWithJpa:1:7",
+             "processInstanceId": "8",
+             "processInstanceUrl": "http://localhost:8080/runtime/process-instances/8",
+             "suspended": false,
+             "taskDefinitionKey": "sid-14429F68-4A79-47DC-A3F0-21804629FD88",
+             "tenantId": "",
+             "url": "http://localhost:8080/runtime/tasks/29",
+             "variables": []
+         }
+     ],
+     "order": "asc",
+     "size": 2,
+     "sort": "id",
+     "start": 0,
+     "total": 2
+ }
+ 
+ 
+ Result returns that the process instance has moved on to the two tasks in parallel(Tech interview / Financial negotiation) in the subprocess in the big rectangle.
+ 
+ 
+ 
+ 
+ 
